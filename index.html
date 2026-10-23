@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<title>Povijesni pomoćnik</title>
+<meta name="theme-color" content="#7a3e1d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Povijest 5">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="ikona.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="ikona.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6efe2; --paper:#fffaf0; --ink:#2b2118; --muted:#7b6a58; --line:#e4d6bd;
+  --accent:#7a3e1d; --accent-2:#b8642f; --me:#7a3e1d; --me-ink:#fff8ee;
+  --ok:#2f7a4a; --no:#a8392b; --chip:#efe2c9;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1c1712; --paper:#2a221a; --ink:#f3e9d8; --muted:#b4a28b; --line:#3e3326;
+    --accent:#e09a5f; --accent-2:#f0b57e; --me:#8a4a24; --me-ink:#fff4e6;
+    --ok:#6cc48b; --no:#ef8a7c; --chip:#382d22;
+  }
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 Nunito,system-ui,sans-serif;display:flex;flex-direction:column;height:100dvh}
+header{padding:calc(10px + env(safe-area-inset-top)) 16px 10px;background:var(--paper);border-bottom:1px solid var(--line)}
+.top{display:flex;align-items:center;gap:10px}
+.logo{width:36px;height:36px;flex:none}
+h1{font:700 1.15rem/1.1 Fraunces,Georgia,serif;margin:0;flex:1}
+h1 small{display:block;font:600 .75rem Nunito,sans-serif;color:var(--muted);margin-top:2px}
+.iconbtn{border:0;background:none;color:var(--muted);font-size:.8rem;font-weight:700;padding:6px 8px;border-radius:8px;cursor:pointer}
+.iconbtn:active{background:var(--chip)}
+select{width:100%;margin-top:10px;padding:9px 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:600 .95rem Nunito,sans-serif}
+main{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:88%;padding:10px 13px;border-radius:16px;white-space:pre-wrap;word-wrap:break-word}
+.bot{background:var(--paper);border:1px solid var(--line);border-bottom-left-radius:4px;align-self:flex-start}
+.me{background:var(--me);color:var(--me-ink);border-bottom-right-radius:4px;align-self:flex-end}
+.src{display:block;margin-top:6px;font-size:.78rem;color:var(--muted)}
+.bot b{color:var(--accent)}
+.typing{color:var(--muted);font-style:italic}
+.quiz .q{font-weight:700}
+.quiz .ans{margin-top:8px;padding:8px 10px;border-radius:10px;background:var(--chip)}
+.row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.btn{border:0;border-radius:999px;padding:8px 14px;font:700 .9rem Nunito,sans-serif;cursor:pointer;background:var(--chip);color:var(--ink)}
+.btn.ok{background:var(--ok);color:#fff}.btn.no{background:var(--no);color:#fff}.btn.pri{background:var(--accent);color:var(--paper)}
+.btn:disabled{opacity:.45}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:8px 16px 0;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:7px 12px;font:700 .85rem Nunito,sans-serif;cursor:pointer}
+form{display:flex;gap:8px;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:var(--bg)}
+textarea{flex:1;resize:none;border:1px solid var(--line);border-radius:14px;padding:10px 12px;font:16px/1.35 Nunito,sans-serif;background:var(--paper);color:var(--ink);max-height:120px}
+textarea:focus,select:focus{outline:2px solid var(--accent-2);outline-offset:1px}
+.send{width:46px;border:0;border-radius:14px;background:var(--accent);color:var(--paper);font-size:1.2rem;cursor:pointer}
+.score{font-size:.8rem;color:var(--muted);text-align:center}
+.mode{display:inline-block;font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:999px;background:var(--chip);color:var(--muted);vertical-align:middle}
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#7a3e1d"/><path d="M14 46V20c6-3 12-3 18 1 6-4 12-4 18-1v26c-6-3-12-3-18 1-6-4-12-4-18-1z" fill="#fff4e0"/><path d="M32 21v26" stroke="#b8642f" stroke-width="2.5"/><path d="M19 28h8M19 33h8M37 28h8M37 33h8" stroke="#c9a77f" stroke-width="2" stroke-linecap="round"/></svg>
+    <h1>Povijesni pomoćnik<small>Povijest 5 · samo iz knjige <span id="mode" class="mode"></span></small></h1>
+    <button class="iconbtn" id="clear" type="button">Novi razgovor</button>
+  </div>
+  <select id="lekcija" aria-label="Odaberi lekciju"></select>
+</header>
+
+<main id="chat" aria-live="polite"></main>
+
+<div class="chips">
+  <button class="chip" data-a="kviz">🎯 Ispitaj me</button>
+  <button class="chip" data-a="sazetak">📝 Sažetak lekcije</button>
+  <button class="chip" data-a="pojmovi">📖 Pojmovnik</button>
+  <button class="chip" data-a="lekcije">📚 Što sve znam?</button>
+</div>
+<form id="f">
+  <textarea id="t" rows="1" placeholder="Pitaj nešto iz povijesti…" enterkeyhint="send"></textarea>
+  <button class="send" aria-label="Pošalji">➤</button>
+</form>
+
+<script src="knjiga.js"></script>
+<script>
+(function(){
+const $ = s => document.querySelector(s);
+const chat = $("#chat"), sel = $("#lekcija"), ta = $("#t");
+let povijest = [];               // {role, content}
+let aiDostupan = true;           // postaje false ako server nema ključ
+let kviz = null;                 // {lista, i, tocno, ukupno}
+
+// ---------- spremanje ----------
+const LS = { get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}} };
+
+// ---------- izbornik lekcija ----------
+sel.innerHTML = '<option value="">📚 Sve lekcije</option>' + (()=>{
+  let h="", cj="";
+  LEKCIJE.forEach(l=>{ if(l.cjelina!==cj){ if(cj) h+="</optgroup>"; cj=l.cjelina; h+=`<optgroup label="${esc(cj)}">`; }
+    h+=`<option value="${l.id}">${esc(l.naslov)} (str. ${l.stranice})</option>`; });
+  return h+"</optgroup>";
+})();
+sel.value = LS.get("lekcija","");
+sel.onchange = () => { LS.set("lekcija", sel.value); kviz=null; };
+const odabrana = () => LEKCIJE.find(l=>l.id===sel.value);
+
+// ---------- prikaz ----------
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function fmt(s){return esc(s).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")}
+function dodaj(role, html, cls=""){
+  const d=document.createElement("div"); d.className=`msg ${role==="user"?"me":"bot"} ${cls}`; d.innerHTML=html;
+  chat.appendChild(d); chat.scrollTop=chat.scrollHeight; return d;
+}
+function bot(text, izvor){ return dodaj("bot", fmt(text) + (izvor?`<span class="src">📍 ${esc(izvor)}</span>`:"")); }
+function zapamti(role, content){ povijest.push({role,content}); LS.set("povijest", povijest.slice(-30)); }
+function postaviMod(){ $("#mode").textContent = aiDostupan ? "AI" : "bez AI"; }
+
+// ---------- lokalna pretraga (radi i bez AI-ja) ----------
+const STOP = new Set("sto što je su tko kako koji koja koje kojeg kojem kojim kada kad gdje zasto zašto i u na od do se da li a za iz po s sa o bio bila bilo bili bile ga mu ih im mi ti to ta taj te ovo ono biti jesu nesto nešto mi meni reci objasni molim kaj kak ili ali pa jer kao koliko odakle cemu čemu cime čime".split(" ").map(n));
+function n(s){return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/đ/g,"d")}
+function stems(s){return [...new Set(n(s).replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(w=>w.length>1&&!STOP.has(w)).map(w=>w.length>5?w.slice(0,5):w))]}
+const ODLOMCI=[];
+LEKCIJE.forEach(l=>{ let nas="";
+  l.tekst.trim().split(/\n\s*\n/).forEach(p=>{ const lines=p.trim().split("\n");
+    if(/^[A-ZČĆŽŠĐ –„”\-()]{6,}$/.test(lines[0].trim())){ nas=lines[0].trim(); }
+    ODLOMCI.push({l, nas, tekst:p.trim(), s:new Set(stems(p))}); }); });
+const DF={}; ODLOMCI.forEach(o=>o.s.forEach(w=>DF[w]=(DF[w]||0)+1));
+const idf=w=>Math.log(1+ODLOMCI.length/(DF[w]||0.5));
+
+function lokalniOdgovor(pitanje){
+  const q=stems(pitanje); if(!q.length) return null;
+  const uk=q.reduce((a,w)=>a+idf(w),0);
+  // 1) gotova pitanja iz knjige
+  let najP=null,najPs=0;
+  LEKCIJE.forEach(l=>l.pitanja.forEach(pt=>{ const ps=new Set(stems(pt.p)); let sc=0; q.forEach(w=>{if(ps.has(w))sc+=idf(w)});
+    const pq=[...ps].reduce((a,w)=>a+idf(w),0); const r=sc/Math.max(uk,pq); if(r>najPs){najPs=r;najP={pt,l}} }));
+  if(najPs>=0.6) return {tekst:najP.pt.o, izvor:`${najP.l.naslov}, str. ${najP.l.stranice}`};
+  // 2) odlomci
+  const fokus=odabrana();
+  const rang=ODLOMCI.map(o=>{let sc=0;q.forEach(w=>{if(o.s.has(w))sc+=idf(w)}); if(fokus&&o.l===fokus)sc*=1.15; return {o,sc}}).sort((a,b)=>b.sc-a.sc);
+  if(!rang[0]||rang[0].sc/uk<0.5) return null;
+  const top=rang[0].o; let t=top.tekst;
+  if(t.split("\n")[0].trim()===top.nas) t=t.split("\n").slice(1).join("\n");
+  if(t.length>650) t=t.slice(0,650).replace(/\s\S*$/,"")+"…";
+  return {tekst:t, izvor:`${top.l.naslov}${top.nas?" – "+top.nas.toLowerCase():""}, str. ${top.l.stranice}`};
+}
+const NEMA="Hmm, to nisam našao u lekcijama koje smo dosad učili. Pokušaj pitati drugim riječima ili pitaj nešto iz knjige. 🙂";
+
+// ---------- slanje pitanja ----------
+async function posalji(tekst){
+  tekst=tekst.trim(); if(!tekst) return;
+  if(kviz&&kviz.cekaOdgovor){ return odgovorNaKviz(tekst); }
+  dodaj("user", esc(tekst)); zapamti("user", tekst);
+  if(aiDostupan){
+    const tip=dodaj("bot","Listam knjigu…","typing");
+    try{
+      const r=await fetch("/.netlify/functions/chat",{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({messages:povijest.slice(-12),lekcija:sel.value})});
+      const d=await r.json().catch(()=>({}));
+      tip.remove();
+      if(r.ok&&d.odgovor){ bot(d.odgovor); zapamti("assistant", d.odgovor); return; }
+      if(d.error==="NO_KEY"||[404,405,501].includes(r.status)){ aiDostupan=false; postaviMod(); }
+    }catch(e){ tip.remove(); }
+  }
+  const lo=lokalniOdgovor(tekst);
+  if(lo){ bot(lo.tekst, lo.izvor); zapamti("assistant", lo.tekst); } else { bot(NEMA); zapamti("assistant", NEMA); }
+}
+
+// ---------- kviz (iz pitanja u knjizi) ----------
+function promijesaj(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function pokreniKviz(){
+  const izvor=odabrana()?[odabrana()]:LEKCIJE;
+  const lista=promijesaj(izvor.flatMap(l=>l.pitanja.map(p=>({...p,l}))));
+  kviz={lista,i:0,tocno:0,ukupno:0};
+  bot(`Kreće kviz! ${odabrana()?"Lekcija: **"+odabrana().naslov+"**":"Pitanja iz **svih lekcija**"} (${lista.length} pitanja). Napiši svoj odgovor, pa ćemo usporediti s knjigom.`);
+  sljedecePitanje();
+}
+function sljedecePitanje(){
+  if(kviz.i>=kviz.lista.length){ bot(`Gotovo! 🎉 Znao/la si **${kviz.tocno} od ${kviz.ukupno}**. ${kviz.tocno===kviz.ukupno?"Odlično!":"Ponovi ono što nisi znao/la pa probaj opet."}`); kviz=null; return; }
+  const p=kviz.lista[kviz.i];
+  const d=dodaj("bot",`<div class="q">Pitanje ${kviz.i+1}/${kviz.lista.length}: ${esc(p.p)}</div><div class="row"><button class="btn" data-k="pokazi">Ne znam – pokaži</button><button class="btn" data-k="kraj">Završi kviz</button></div>`,"quiz");
+  kviz.el=d; kviz.cekaOdgovor=true; ta.placeholder="Tvoj odgovor…"; ta.focus();
+}
+function odgovorNaKviz(tekst){
+  if(tekst!==null) dodaj("user", esc(tekst));
+  const p=kviz.lista[kviz.i]; kviz.cekaOdgovor=false; ta.placeholder="Pitaj nešto iz povijesti…";
+  kviz.el.querySelectorAll("button").forEach(b=>b.disabled=true);
+  const d=dodaj("bot",`${tekst===null?"":"Usporedi sa svojim odgovorom.<br>"}<div class="ans">📖 <b>Iz knjige:</b> ${esc(p.o)}</div><span class="src">📍 ${esc(p.l.naslov)}, str. ${esc(p.l.stranice)}</span>`+
+    (tekst===null?`<div class="row"><button class="btn pri" data-k="dalje0">Sljedeće pitanje →</button></div>`
+      :`<div class="row"><button class="btn ok" data-k="da">✓ Znao/la sam</button><button class="btn no" data-k="ne">✗ Nisam</button></div>`),"quiz");
+  d.dataset.kviz="1";
+}
+chat.addEventListener("click",e=>{
+  const b=e.target.closest("button[data-k]"); if(!b||!kviz) return;
+  const k=b.dataset.k; b.parentElement.querySelectorAll("button").forEach(x=>x.disabled=true);
+  if(k==="pokazi") return odgovorNaKviz(null);
+  if(k==="kraj"){ kviz.cekaOdgovor=false; ta.placeholder="Pitaj nešto iz povijesti…"; bot(`Kviz završen. Rezultat: **${kviz.tocno} od ${kviz.ukupno}**.`); kviz=null; return; }
+  kviz.ukupno++; if(k==="da") kviz.tocno++;
+  kviz.i++; sljedecePitanje();
+});
+
+// ---------- brzi gumbi ----------
+document.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{
+  const a=c.dataset.a, l=odabrana();
+  if(a==="kviz") return pokreniKviz();
+  if(a==="lekcije"){ dodaj("user","Što sve znaš?"); return bot("Znam samo ono što je u lekcijama koje smo učili:\n\n"+LEKCIJE.map(l=>"• **"+l.naslov+"** (str. "+l.stranice+")").join("\n")+"\n\nGore odaberi lekciju pa me pitaj ili klikni „Ispitaj me”."); }
+  if(!l) return bot("Najprije gore odaberi **jednu lekciju**. 👆");
+  if(a==="sazetak"){
+    dodaj("user","Sažetak: "+esc(l.naslov));
+    const m=l.tekst.split(/\n\s*\n/).filter(p=>/^PONOVIMO/.test(p.trim()));
+    return bot(m.length? m.join("\n\n").replace(/^(PONOVIMO[^\n]*)/gm,"**$1**") : "Ova lekcija nema dio „Ponovimo”. Pitaj me nešto konkretno iz nje!", l.naslov+", str. "+l.stranice);
+  }
+  if(a==="pojmovi"){
+    dodaj("user","Pojmovnik: "+esc(l.naslov));
+    const p=[...l.tekst.matchAll(/Pojmovnik:\s*([^\n]+)/g)].map(x=>"• "+x[1]);
+    return bot(p.length? "**Pojmovnik** – "+l.naslov+"\n\n"+p.join("\n") : "U ovoj lekciji nema pojmovnika.", l.naslov+", str. "+l.stranice);
+  }
+});
+
+// ---------- unos ----------
+$("#f").onsubmit=e=>{e.preventDefault(); const v=ta.value; ta.value=""; ta.style.height=""; posalji(v);};
+ta.addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); $("#f").requestSubmit(); } });
+ta.addEventListener("input",()=>{ ta.style.height="auto"; ta.style.height=Math.min(ta.scrollHeight,120)+"px"; });
+$("#clear").onclick=()=>{ povijest=[]; kviz=null; LS.set("povijest",[]); chat.innerHTML=""; pozdrav(); };
+
+function pozdrav(){
+  bot("Bok! 👋 Ja sam tvoj **Povijesni pomoćnik**. Odgovaram samo iz tvoje knjige Povijest 5.\n\nPitaj me npr. „Tko je otac povijesti?” ili klikni **🎯 Ispitaj me** da te ispitam.");
+}
+// vrati prethodni razgovor
+povijest=LS.get("povijest",[]);
+if(povijest.length){ povijest.forEach(m=>m.role==="user"?dodaj("user",esc(m.content)):bot(m.content)); }
+else pozdrav();
+postaviMod();
+})();
+</script>
+</body>
+</html>
