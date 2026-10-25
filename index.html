@@ -58,6 +58,16 @@ textarea{flex:1;resize:none;border:1px solid var(--line);border-radius:14px;padd
 textarea:focus,select:focus{outline:2px solid var(--accent-2);outline-offset:1px}
 .send{width:46px;border:0;border-radius:14px;background:var(--accent);color:var(--paper);font-size:1.2rem;cursor:pointer}
 .score{font-size:.8rem;color:var(--muted);text-align:center}
+#start{position:fixed;inset:0;z-index:10;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px;text-align:center}
+#start[hidden]{display:none}
+#start h2{font:700 1.6rem/1.2 Fraunces,Georgia,serif;margin:14px 0 6px}
+#start p{color:var(--muted);margin:0 0 24px}
+.razredi{display:flex;gap:14px;width:100%;max-width:360px}
+.razredi button{flex:1;border:2px solid var(--line);background:var(--paper);color:var(--ink);border-radius:20px;padding:22px 8px;cursor:pointer;font:700 1rem Nunito,sans-serif}
+.razredi button b{display:block;font:700 2.6rem/1 Fraunces,Georgia,serif;color:var(--accent);margin-bottom:6px}
+.razredi button:active,.razredi button:hover{border-color:var(--accent)}
+.razredi small{display:block;color:var(--muted);font-weight:600;font-size:.78rem;margin-top:4px}
+.rbtn{border:1px solid var(--line);background:var(--chip);color:var(--ink);font:700 .8rem Nunito,sans-serif;padding:6px 10px;border-radius:999px;cursor:pointer;flex:none}
 .mode{display:inline-block;font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:999px;background:var(--chip);color:var(--muted);vertical-align:middle}
 </style>
 </head>
@@ -65,11 +75,22 @@ textarea:focus,select:focus{outline:2px solid var(--accent-2);outline-offset:1px
 <header>
   <div class="top">
     <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#7a3e1d"/><path d="M14 46V20c6-3 12-3 18 1 6-4 12-4 18-1v26c-6-3-12-3-18 1-6-4-12-4-18-1z" fill="#fff4e0"/><path d="M32 21v26" stroke="#b8642f" stroke-width="2.5"/><path d="M19 28h8M19 33h8M37 28h8M37 33h8" stroke="#c9a77f" stroke-width="2" stroke-linecap="round"/></svg>
-    <h1>Povijesni pomoćnik<small>Povijest 5 · samo iz knjige <span id="mode" class="mode"></span></small></h1>
-    <button class="iconbtn" id="clear" type="button">Novi razgovor</button>
+    <h1>Povijesni pomoćnik<small><span id="knjNaslov">Povijest</span> · samo iz knjige <span id="mode" class="mode"></span></small></h1>
+    <button class="rbtn" id="promijeni" type="button" aria-label="Promijeni razred">5. r ⇄</button>
+    <button class="iconbtn" id="clear" type="button">Novo</button>
   </div>
   <select id="lekcija" aria-label="Odaberi lekciju"></select>
 </header>
+
+<div id="start" hidden>
+  <svg width="72" height="72" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#7a3e1d"/><path d="M14 46V20c6-3 12-3 18 1 6-4 12-4 18-1v26c-6-3-12-3-18 1-6-4-12-4-18-1z" fill="#fff4e0"/><path d="M32 21v26" stroke="#b8642f" stroke-width="2.5"/><path d="M19 28h8M19 33h8M37 28h8M37 33h8" stroke="#c9a77f" stroke-width="2" stroke-linecap="round"/></svg>
+  <h2>Povijesni pomoćnik</h2>
+  <p>Koji razred učiš?</p>
+  <div class="razredi">
+    <button type="button" data-r="5"><b>5.</b>razred<small id="info5"></small></button>
+    <button type="button" data-r="7"><b>7.</b>razred<small id="info7"></small></button>
+  </div>
+</div>
 
 <main id="chat" aria-live="polite"></main>
 
@@ -85,6 +106,7 @@ textarea:focus,select:focus{outline:2px solid var(--accent-2);outline-offset:1px
 </form>
 
 <script src="knjiga.js"></script>
+<script src="knjiga7.js"></script>
 <script>
 (function(){
 const $ = s => document.querySelector(s);
@@ -92,20 +114,28 @@ const chat = $("#chat"), sel = $("#lekcija"), ta = $("#t");
 let povijest = [];               // {role, content}
 let aiDostupan = true;           // postaje false ako server nema ključ
 let kviz = null;                 // {lista, i, tocno, ukupno}
+const KNJIGE = {
+  "5": { naslov:"Povijest 5", lekcije: (typeof LEKCIJE!=="undefined"?LEKCIJE:[]) },
+  "7": { naslov:"Povijest 7", lekcije: (typeof LEKCIJE_7!=="undefined"?LEKCIJE_7:[]) },
+};
+let razred = null, LEK = [];
 
 // ---------- spremanje ----------
 const LS = { get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}} };
 
 // ---------- izbornik lekcija ----------
+function izbornik(){
 sel.innerHTML = '<option value="">📚 Sve lekcije</option>' + (()=>{
   let h="", cj="";
-  LEKCIJE.forEach(l=>{ if(l.cjelina!==cj){ if(cj) h+="</optgroup>"; cj=l.cjelina; h+=`<optgroup label="${esc(cj)}">`; }
+  LEK.forEach(l=>{ if(l.cjelina!==cj){ if(cj) h+="</optgroup>"; cj=l.cjelina; h+=`<optgroup label="${esc(cj)}">`; }
     h+=`<option value="${l.id}">${esc(l.naslov)} (str. ${l.stranice})</option>`; });
   return h+"</optgroup>";
 })();
-sel.value = LS.get("lekcija","");
-sel.onchange = () => { LS.set("lekcija", sel.value); kviz=null; };
-const odabrana = () => LEKCIJE.find(l=>l.id===sel.value);
+sel.value = LS.get("lekcija_"+razred,"");
+if(sel.value===""&&sel.selectedIndex<0) sel.value="";
+}
+sel.onchange = () => { LS.set("lekcija_"+razred, sel.value); kviz=null; };
+const odabrana = () => LEK.find(l=>l.id===sel.value);
 
 // ---------- prikaz ----------
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
@@ -115,19 +145,20 @@ function dodaj(role, html, cls=""){
   chat.appendChild(d); chat.scrollTop=chat.scrollHeight; return d;
 }
 function bot(text, izvor){ return dodaj("bot", fmt(text) + (izvor?`<span class="src">📍 ${esc(izvor)}</span>`:"")); }
-function zapamti(role, content){ povijest.push({role,content}); LS.set("povijest", povijest.slice(-30)); }
+function zapamti(role, content){ povijest.push({role,content}); LS.set("povijest_"+razred, povijest.slice(-30)); }
 function postaviMod(){ $("#mode").textContent = aiDostupan ? "AI" : "bez AI"; }
 
 // ---------- lokalna pretraga (radi i bez AI-ja) ----------
 const STOP = new Set("sto što je su tko kako koji koja koje kojeg kojem kojim kada kad gdje zasto zašto i u na od do se da li a za iz po s sa o bio bila bilo bili bile ga mu ih im mi ti to ta taj te ovo ono biti jesu nesto nešto mi meni reci objasni molim kaj kak ili ali pa jer kao koliko odakle cemu čemu cime čime".split(" ").map(n));
 function n(s){return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/đ/g,"d")}
 function stems(s){return [...new Set(n(s).replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(w=>w.length>1&&!STOP.has(w)).map(w=>w.length>5?w.slice(0,5):w))]}
-const ODLOMCI=[];
-LEKCIJE.forEach(l=>{ let nas="";
+let ODLOMCI=[], DF={};
+function gradiIndeks(){ ODLOMCI=[]; DF={};
+LEK.forEach(l=>{ let nas="";
   l.tekst.trim().split(/\n\s*\n/).forEach(p=>{ const lines=p.trim().split("\n");
-    if(/^[A-ZČĆŽŠĐ –„”\-()]{6,}$/.test(lines[0].trim())){ nas=lines[0].trim(); }
-    ODLOMCI.push({l, nas, tekst:p.trim(), s:new Set(stems(p))}); }); });
-const DF={}; ODLOMCI.forEach(o=>o.s.forEach(w=>DF[w]=(DF[w]||0)+1));
+    if(/^[A-ZČĆŽŠĐ0-9 –„”"…?!.,\-()]{6,}$/.test(lines[0].trim())){ nas=lines[0].trim(); }
+    ODLOMCI.push({l, nas, tekst:p.trim(), s:new Set(stems(p)), h:new Set(stems(nas))}); }); });
+ODLOMCI.forEach(o=>o.s.forEach(w=>DF[w]=(DF[w]||0)+1)); }
 const idf=w=>Math.log(1+ODLOMCI.length/(DF[w]||0.5));
 
 function lokalniOdgovor(pitanje){
@@ -135,18 +166,19 @@ function lokalniOdgovor(pitanje){
   const uk=q.reduce((a,w)=>a+idf(w),0);
   // 1) gotova pitanja iz knjige
   let najP=null,najPs=0;
-  LEKCIJE.forEach(l=>l.pitanja.forEach(pt=>{ const ps=new Set(stems(pt.p)); let sc=0; q.forEach(w=>{if(ps.has(w))sc+=idf(w)});
+  LEK.forEach(l=>l.pitanja.forEach(pt=>{ const ps=new Set(stems(pt.p)); let sc=0; q.forEach(w=>{if(ps.has(w))sc+=idf(w)});
     const pq=[...ps].reduce((a,w)=>a+idf(w),0); const r=sc/Math.max(uk,pq); if(r>najPs){najPs=r;najP={pt,l}} }));
   if(najPs>=0.6) return {tekst:najP.pt.o, izvor:`${najP.l.naslov}, str. ${najP.l.stranice}`};
   // 2) odlomci
   const fokus=odabrana();
-  const rang=ODLOMCI.map(o=>{let sc=0;q.forEach(w=>{if(o.s.has(w))sc+=idf(w)}); if(fokus&&o.l===fokus)sc*=1.15; return {o,sc}}).sort((a,b)=>b.sc-a.sc);
+  const rang=ODLOMCI.map(o=>{let sc=0;q.forEach(w=>{if(o.s.has(w))sc+=idf(w); else if(o.h.has(w))sc+=idf(w)*0.8; if(o.h.has(w))sc+=idf(w)*0.3}); if(fokus&&o.l===fokus)sc*=1.15; return {o,sc}}).sort((a,b)=>b.sc-a.sc);
   if(!rang[0]||rang[0].sc/uk<0.5) return null;
   const top=rang[0].o; let t=top.tekst;
   if(t.split("\n")[0].trim()===top.nas) t=t.split("\n").slice(1).join("\n");
   if(t.length>650) t=t.slice(0,650).replace(/\s\S*$/,"")+"…";
   return {tekst:t, izvor:`${top.l.naslov}${top.nas?" – "+top.nas.toLowerCase():""}, str. ${top.l.stranice}`};
 }
+const PRAZNO=()=>`Za **${razred}. razred** još nema nijedne lekcije. Kad je obradite na satu, dodat ću je ovdje. 📚`;
 const NEMA="Hmm, to nisam našao u lekcijama koje smo dosad učili. Pokušaj pitati drugim riječima ili pitaj nešto iz knjige. 🙂";
 
 // ---------- slanje pitanja ----------
@@ -158,13 +190,14 @@ async function posalji(tekst){
     const tip=dodaj("bot","Listam knjigu…","typing");
     try{
       const r=await fetch("/.netlify/functions/chat",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({messages:povijest.slice(-12),lekcija:sel.value})});
+        body:JSON.stringify({messages:povijest.slice(-12),lekcija:sel.value,razred})});
       const d=await r.json().catch(()=>({}));
       tip.remove();
       if(r.ok&&d.odgovor){ bot(d.odgovor); zapamti("assistant", d.odgovor); return; }
       if(d.error==="NO_KEY"||[404,405,501].includes(r.status)){ aiDostupan=false; postaviMod(); }
     }catch(e){ tip.remove(); }
   }
+  if(!LEK.length){ bot(PRAZNO()); return; }
   const lo=lokalniOdgovor(tekst);
   if(lo){ bot(lo.tekst, lo.izvor); zapamti("assistant", lo.tekst); } else { bot(NEMA); zapamti("assistant", NEMA); }
 }
@@ -172,7 +205,8 @@ async function posalji(tekst){
 // ---------- kviz (iz pitanja u knjizi) ----------
 function promijesaj(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function pokreniKviz(){
-  const izvor=odabrana()?[odabrana()]:LEKCIJE;
+  if(!LEK.length) return bot(PRAZNO());
+  const izvor=odabrana()?[odabrana()]:LEK;
   const lista=promijesaj(izvor.flatMap(l=>l.pitanja.map(p=>({...p,l}))));
   kviz={lista,i:0,tocno:0,ukupno:0};
   bot(`Kreće kviz! ${odabrana()?"Lekcija: **"+odabrana().naslov+"**":"Pitanja iz **svih lekcija**"} (${lista.length} pitanja). Napiši svoj odgovor, pa ćemo usporediti s knjigom.`);
@@ -206,7 +240,8 @@ chat.addEventListener("click",e=>{
 document.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{
   const a=c.dataset.a, l=odabrana();
   if(a==="kviz") return pokreniKviz();
-  if(a==="lekcije"){ dodaj("user","Što sve znaš?"); return bot("Znam samo ono što je u lekcijama koje smo učili:\n\n"+LEKCIJE.map(l=>"• **"+l.naslov+"** (str. "+l.stranice+")").join("\n")+"\n\nGore odaberi lekciju pa me pitaj ili klikni „Ispitaj me”."); }
+  if(!LEK.length) return bot(PRAZNO());
+  if(a==="lekcije"){ dodaj("user","Što sve znaš?"); return bot("Znam samo ono što je u lekcijama koje smo učili:\n\n"+LEK.map(l=>"• **"+l.naslov+"** (str. "+l.stranice+")").join("\n")+"\n\nGore odaberi lekciju pa me pitaj ili klikni „Ispitaj me”."); }
   if(!l) return bot("Najprije gore odaberi **jednu lekciju**. 👆");
   if(a==="sazetak"){
     dodaj("user","Sažetak: "+esc(l.naslov));
@@ -224,15 +259,31 @@ document.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{
 $("#f").onsubmit=e=>{e.preventDefault(); const v=ta.value; ta.value=""; ta.style.height=""; posalji(v);};
 ta.addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); $("#f").requestSubmit(); } });
 ta.addEventListener("input",()=>{ ta.style.height="auto"; ta.style.height=Math.min(ta.scrollHeight,120)+"px"; });
-$("#clear").onclick=()=>{ povijest=[]; kviz=null; LS.set("povijest",[]); chat.innerHTML=""; pozdrav(); };
+$("#clear").onclick=()=>{ povijest=[]; kviz=null; LS.set("povijest_"+razred,[]); chat.innerHTML=""; pozdrav(); };
 
 function pozdrav(){
-  bot("Bok! 👋 Ja sam tvoj **Povijesni pomoćnik**. Odgovaram samo iz tvoje knjige Povijest 5.\n\nPitaj me npr. „Tko je otac povijesti?” ili klikni **🎯 Ispitaj me** da te ispitam.");
+  if(!LEK.length) return bot(`Bok! 👋 Odabrao/la si **${razred}. razred**.\n\n`+PRAZNO());
+  bot(`Bok! 👋 Ja sam tvoj **Povijesni pomoćnik** za **${razred}. razred**. Odgovaram samo iz knjige ${KNJIGE[razred].naslov} (${info(razred)}).\n\nPitaj me nešto ili klikni **🎯 Ispitaj me** da te ispitam.`);
 }
-// vrati prethodni razgovor
-povijest=LS.get("povijest",[]);
-if(povijest.length){ povijest.forEach(m=>m.role==="user"?dodaj("user",esc(m.content)):bot(m.content)); }
-else pozdrav();
+// ---------- odabir razreda ----------
+function info(r){ const n=KNJIGE[r].lekcije.length; return n? n+" lekcij"+(n%10>=2&&n%10<=4&&(n%100<10||n%100>=20)?"e":(n%10===1&&n%100!==11?"a":"a")) : "još nema lekcija"; }
+$("#info5").textContent=info("5"); $("#info7").textContent=info("7");
+function odaberiRazred(r){
+  razred=r; LS.set("razred",r); LEK=KNJIGE[r].lekcije; kviz=null;
+  $("#knjNaslov").textContent=KNJIGE[r].naslov; $("#promijeni").textContent=r+". r ⇄";
+  izbornik(); gradiIndeks(); chat.innerHTML="";
+  ta.placeholder="Pitaj nešto iz povijesti…";
+  povijest=LS.get("povijest_"+r,[]);
+  if(povijest.length){ povijest.forEach(m=>m.role==="user"?dodaj("user",esc(m.content)):bot(m.content)); }
+  else pozdrav();
+  $("#start").hidden=true;
+}
+document.querySelectorAll("#start [data-r]").forEach(b=>b.onclick=()=>odaberiRazred(b.dataset.r));
+$("#promijeni").onclick=()=>{ $("#start").hidden=false; };
+// stari razgovor iz prve verzije (bio je samo 5. razred)
+const stari=LS.get("povijest",null); if(stari&&!LS.get("povijest_5",null)){ LS.set("povijest_5",stari); }
+const zadnji=LS.get("razred",null);
+if(zadnji&&KNJIGE[zadnji]) odaberiRazred(zadnji); else $("#start").hidden=false;
 postaviMod();
 })();
 </script>
