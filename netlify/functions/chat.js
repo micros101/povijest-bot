@@ -1,12 +1,14 @@
 // Netlify funkcija: šalje pitanje Claudeu zajedno s bilješkama iz knjige.
 // Potrebna varijabla okruženja na Netlifyju: ANTHROPIC_API_KEY
 // (neobavezno: MODEL, npr. "claude-haiku-5-5")
+// ključ -> predmet, razred i bilješke (ključevi "5" i "7" su povijest)
 const KNJIGE = {
-  "5": require("../../knjiga.js"),
-  "7": require("../../knjiga7.js"),
+  "5":    { predmet: "povijesti",   naziv: "Povijest 5",    razred: 5, lekcije: require("../../knjiga.js") },
+  "7":    { predmet: "povijesti",   naziv: "Povijest 7",    razred: 7, lekcije: require("../../knjiga7.js") },
+  "inf5": { predmet: "informatike", naziv: "Informatika 5", razred: 5, lekcije: require("../../informatika5.js") },
 };
 
-const pravila = (razred) => `Ti si "Povijesni pomoćnik", prijateljski pomoćnik za učenje povijesti za učenike ${razred}. razreda osnovne škole u Hrvatskoj.
+const pravila = (predmet, razred) => `Ti si "Pomoćnik za učenje", prijateljski pomoćnik za učenje ${predmet} za učenike ${razred}. razreda osnovne škole u Hrvatskoj.
 
 STROGA PRAVILA:
 1. Odgovaraš ISKLJUČIVO na temelju bilješki iz udžbenika koje su dolje u oznakama <lekcija>. Ne dodaješ činjenice, datume, imena ni objašnjenja kojih nema u bilješkama, čak i ako ih znaš.
@@ -50,9 +52,9 @@ exports.handler = async (event) => {
   }, []);
   if (!msgs.length || msgs[msgs.length - 1].role !== "user") return json(400, { error: "Nema pitanja." });
 
-  const razred = body.razred === "7" ? "7" : "5";
-  const LEKCIJE = KNJIGE[razred];
-  if (!LEKCIJE.length) return json(200, { odgovor: `Za ${razred}. razred još nema nijedne lekcije u knjizi. Kad je obradite na satu, dodat će se ovdje.` });
+  const knjiga = KNJIGE[body.razred] || KNJIGE["5"];
+  const LEKCIJE = knjiga.lekcije;
+  if (!LEKCIJE.length) return json(200, { odgovor: `U knjizi ${knjiga.naziv} još nema nijedne lekcije. Kad je obradite na satu, dodat će se ovdje.` });
 
   const izvor = LEKCIJE.map(
     (l) => `<lekcija naslov="${l.naslov}" cjelina="${l.cjelina}" stranice="${l.stranice}">\n${l.tekst.trim()}\n</lekcija>`
@@ -75,7 +77,7 @@ exports.handler = async (event) => {
         model: process.env.MODEL || "claude-haiku-5-5",
         max_tokens: 700,
         system: [
-          { type: "text", text: pravila(razred) + izvor, cache_control: { type: "ephemeral" } },
+          { type: "text", text: pravila(knjiga.predmet, knjiga.razred) + izvor, cache_control: { type: "ephemeral" } },
           { type: "text", text: fokus },
         ],
         messages: msgs,

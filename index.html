@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-<title>Povijesni pomoćnik</title>
+<title>Pomoćnik za učenje</title>
 <meta name="theme-color" content="#7a3e1d">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Povijest 5">
+<meta name="apple-mobile-web-app-title" content="Učenje">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="ikona.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="ikona.svg">
@@ -62,7 +62,9 @@ textarea:focus,select:focus{outline:2px solid var(--accent-2);outline-offset:1px
 #start[hidden]{display:none}
 #start h2{font:700 1.6rem/1.2 Fraunces,Georgia,serif;margin:14px 0 6px}
 #start p{color:var(--muted);margin:0 0 24px}
-.razredi{display:flex;gap:14px;width:100%;max-width:360px}
+#izbor{width:100%;max-width:360px;display:flex;flex-direction:column;gap:18px}
+.predmet h3{margin:0 0 8px;text-align:left;font:700 .85rem Nunito,sans-serif;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.razredi{display:flex;gap:14px;width:100%}
 .razredi button{flex:1;border:2px solid var(--line);background:var(--paper);color:var(--ink);border-radius:20px;padding:22px 8px;cursor:pointer;font:700 1rem Nunito,sans-serif}
 .razredi button b{display:block;font:700 2.6rem/1 Fraunces,Georgia,serif;color:var(--accent);margin-bottom:6px}
 .razredi button:active,.razredi button:hover{border-color:var(--accent)}
@@ -75,8 +77,8 @@ textarea:focus,select:focus{outline:2px solid var(--accent-2);outline-offset:1px
 <header>
   <div class="top">
     <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#7a3e1d"/><path d="M14 46V20c6-3 12-3 18 1 6-4 12-4 18-1v26c-6-3-12-3-18 1-6-4-12-4-18-1z" fill="#fff4e0"/><path d="M32 21v26" stroke="#b8642f" stroke-width="2.5"/><path d="M19 28h8M19 33h8M37 28h8M37 33h8" stroke="#c9a77f" stroke-width="2" stroke-linecap="round"/></svg>
-    <h1>Povijesni pomoćnik<small><span id="knjNaslov">Povijest</span> · samo iz knjige <span id="mode" class="mode"></span></small></h1>
-    <button class="rbtn" id="promijeni" type="button" aria-label="Promijeni razred">5. r ⇄</button>
+    <h1>Pomoćnik za učenje<small><span id="knjNaslov">Povijest</span> · samo iz knjige <span id="mode" class="mode"></span></small></h1>
+    <button class="rbtn" id="promijeni" type="button" aria-label="Promijeni predmet ili razred">⇄</button>
     <button class="iconbtn" id="clear" type="button">Novo</button>
   </div>
   <select id="lekcija" aria-label="Odaberi lekciju"></select>
@@ -84,12 +86,9 @@ textarea:focus,select:focus{outline:2px solid var(--accent-2);outline-offset:1px
 
 <div id="start" hidden>
   <svg width="72" height="72" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#7a3e1d"/><path d="M14 46V20c6-3 12-3 18 1 6-4 12-4 18-1v26c-6-3-12-3-18 1-6-4-12-4-18-1z" fill="#fff4e0"/><path d="M32 21v26" stroke="#b8642f" stroke-width="2.5"/><path d="M19 28h8M19 33h8M37 28h8M37 33h8" stroke="#c9a77f" stroke-width="2" stroke-linecap="round"/></svg>
-  <h2>Povijesni pomoćnik</h2>
-  <p>Koji razred učiš?</p>
-  <div class="razredi">
-    <button type="button" data-r="5"><b>5.</b>razred<small id="info5"></small></button>
-    <button type="button" data-r="7"><b>7.</b>razred<small id="info7"></small></button>
-  </div>
+  <h2>Pomoćnik za učenje</h2>
+  <p>Što učiš?</p>
+  <div id="izbor"></div>
 </div>
 
 <main id="chat" aria-live="polite"></main>
@@ -101,12 +100,13 @@ textarea:focus,select:focus{outline:2px solid var(--accent-2);outline-offset:1px
   <button class="chip" data-a="lekcije">📚 Što sve znam?</button>
 </div>
 <form id="f">
-  <textarea id="t" rows="1" placeholder="Pitaj nešto iz povijesti…" enterkeyhint="send"></textarea>
+  <textarea id="t" rows="1" placeholder="Pitaj nešto iz knjige…" enterkeyhint="send"></textarea>
   <button class="send" aria-label="Pošalji">➤</button>
 </form>
 
 <script src="knjiga.js"></script>
 <script src="knjiga7.js"></script>
+<script src="informatika5.js"></script>
 <script>
 (function(){
 const $ = s => document.querySelector(s);
@@ -115,8 +115,9 @@ let povijest = [];               // {role, content}
 let aiDostupan = true;           // postaje false ako server nema ključ
 let kviz = null;                 // {lista, i, tocno, ukupno}
 const KNJIGE = {
-  "5": { naslov:"Povijest 5", lekcije: (typeof LEKCIJE!=="undefined"?LEKCIJE:[]) },
-  "7": { naslov:"Povijest 7", lekcije: (typeof LEKCIJE_7!=="undefined"?LEKCIJE_7:[]) },
+  "5":    { naslov:"Povijest 5",    predmet:"Povijest",    razred:5, kratko:"Pov 5", ikona:"🏛️", lekcije: (typeof LEKCIJE!=="undefined"?LEKCIJE:[]) },
+  "7":    { naslov:"Povijest 7",    predmet:"Povijest",    razred:7, kratko:"Pov 7", ikona:"🏛️", lekcije: (typeof LEKCIJE_7!=="undefined"?LEKCIJE_7:[]) },
+  "inf5": { naslov:"Informatika 5", predmet:"Informatika", razred:5, kratko:"Inf 5", ikona:"💻", lekcije: (typeof LEKCIJE_INF5!=="undefined"?LEKCIJE_INF5:[]) },
 };
 let razred = null, LEK = [];
 
@@ -178,7 +179,7 @@ function lokalniOdgovor(pitanje){
   if(t.length>650) t=t.slice(0,650).replace(/\s\S*$/,"")+"…";
   return {tekst:t, izvor:`${top.l.naslov}${top.nas?" – "+top.nas.toLowerCase():""}, str. ${top.l.stranice}`};
 }
-const PRAZNO=()=>`Za **${razred}. razred** još nema nijedne lekcije. Kad je obradite na satu, dodat ću je ovdje. 📚`;
+const PRAZNO=()=>`U knjizi **${KNJIGE[razred].naslov}** još nema nijedne lekcije. Kad je obradite na satu, dodat ću je ovdje. 📚`;
 const NEMA="Hmm, to nisam našao u lekcijama koje smo dosad učili. Pokušaj pitati drugim riječima ili pitaj nešto iz knjige. 🙂";
 
 // ---------- slanje pitanja ----------
@@ -220,7 +221,7 @@ function sljedecePitanje(){
 }
 function odgovorNaKviz(tekst){
   if(tekst!==null) dodaj("user", esc(tekst));
-  const p=kviz.lista[kviz.i]; kviz.cekaOdgovor=false; ta.placeholder="Pitaj nešto iz povijesti…";
+  const p=kviz.lista[kviz.i]; kviz.cekaOdgovor=false; ta.placeholder="Pitaj nešto iz knjige…";
   kviz.el.querySelectorAll("button").forEach(b=>b.disabled=true);
   const d=dodaj("bot",`${tekst===null?"":"Usporedi sa svojim odgovorom.<br>"}<div class="ans">📖 <b>Iz knjige:</b> ${esc(p.o)}</div><span class="src">📍 ${esc(p.l.naslov)}, str. ${esc(p.l.stranice)}</span>`+
     (tekst===null?`<div class="row"><button class="btn pri" data-k="dalje0">Sljedeće pitanje →</button></div>`
@@ -231,7 +232,7 @@ chat.addEventListener("click",e=>{
   const b=e.target.closest("button[data-k]"); if(!b||!kviz) return;
   const k=b.dataset.k; b.parentElement.querySelectorAll("button").forEach(x=>x.disabled=true);
   if(k==="pokazi") return odgovorNaKviz(null);
-  if(k==="kraj"){ kviz.cekaOdgovor=false; ta.placeholder="Pitaj nešto iz povijesti…"; bot(`Kviz završen. Rezultat: **${kviz.tocno} od ${kviz.ukupno}**.`); kviz=null; return; }
+  if(k==="kraj"){ kviz.cekaOdgovor=false; ta.placeholder="Pitaj nešto iz knjige…"; bot(`Kviz završen. Rezultat: **${kviz.tocno} od ${kviz.ukupno}**.`); kviz=null; return; }
   kviz.ukupno++; if(k==="da") kviz.tocno++;
   kviz.i++; sljedecePitanje();
 });
@@ -262,17 +263,22 @@ ta.addEventListener("input",()=>{ ta.style.height="auto"; ta.style.height=Math.m
 $("#clear").onclick=()=>{ povijest=[]; kviz=null; LS.set("povijest_"+razred,[]); chat.innerHTML=""; pozdrav(); };
 
 function pozdrav(){
-  if(!LEK.length) return bot(`Bok! 👋 Odabrao/la si **${razred}. razred**.\n\n`+PRAZNO());
-  bot(`Bok! 👋 Ja sam tvoj **Povijesni pomoćnik** za **${razred}. razred**. Odgovaram samo iz knjige ${KNJIGE[razred].naslov} (${info(razred)}).\n\nPitaj me nešto ili klikni **🎯 Ispitaj me** da te ispitam.`);
+  const K=KNJIGE[razred];
+  if(!LEK.length) return bot(`Bok! 👋 Odabrao/la si: **${K.naslov}**.\n\n`+PRAZNO());
+  bot(`Bok! 👋 Ja sam tvoj **pomoćnik za učenje** – **${K.predmet}, ${K.razred}. razred**. Odgovaram samo iz knjige ${K.naslov} (${info(razred)}).\n\nPitaj me nešto ili klikni **🎯 Ispitaj me** da te ispitam.`);
 }
 // ---------- odabir razreda ----------
 function info(r){ const n=KNJIGE[r].lekcije.length; return n? n+" lekcij"+(n%10>=2&&n%10<=4&&(n%100<10||n%100>=20)?"e":(n%10===1&&n%100!==11?"a":"a")) : "još nema lekcija"; }
-$("#info5").textContent=info("5"); $("#info7").textContent=info("7");
+// gumbi za odabir: grupirani po predmetu
+(()=>{ const grupe={}; Object.entries(KNJIGE).forEach(([k,K])=>(grupe[K.predmet]=grupe[K.predmet]||[]).push([k,K]));
+  $("#izbor").innerHTML=Object.entries(grupe).map(([pr,lista])=>`<div class="predmet"><h3>${lista[0][1].ikona} ${esc(pr)}</h3><div class="razredi">`+
+    lista.map(([k,K])=>`<button type="button" data-r="${k}"><b>${K.razred}.</b>razred<small>${info(k)}</small></button>`).join("")+`</div></div>`).join("");
+})();
 function odaberiRazred(r){
   razred=r; LS.set("razred",r); LEK=KNJIGE[r].lekcije; kviz=null;
-  $("#knjNaslov").textContent=KNJIGE[r].naslov; $("#promijeni").textContent=r+". r ⇄";
+  $("#knjNaslov").textContent=KNJIGE[r].naslov; $("#promijeni").textContent=KNJIGE[r].kratko+" ⇄";
   izbornik(); gradiIndeks(); chat.innerHTML="";
-  ta.placeholder="Pitaj nešto iz povijesti…";
+  ta.placeholder="Pitaj nešto iz knjige…";
   povijest=LS.get("povijest_"+r,[]);
   if(povijest.length){ povijest.forEach(m=>m.role==="user"?dodaj("user",esc(m.content)):bot(m.content)); }
   else pozdrav();
